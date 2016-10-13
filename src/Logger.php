@@ -31,19 +31,19 @@ use Acfatah\ErrorHandler\Logger\HandlerInterface;
 class Logger extends AbstractLogger implements LoggerInterface
 {
     /**
-     * @var Acfatah\ErrorHandler\Logger\HandlerInterface
+     * @var \Acfatah\ErrorHandler\Logger\HandlerInterface
      */
     protected $defaultHandler;
 
     /**
-     * @var array
+     * @var \Acfatah\ErrorHandler\Logger\HandlerInterface[]
      */
     protected $handlers;
 
     /**
      * Constructor.
      *
-     * @param Acfatah\ErrorHandler\Logger\HandlerInterface $defaultHandler Default log handler
+     * @param \Acfatah\ErrorHandler\Logger\HandlerInterface $defaultHandler Default log handler
      * @throws \RuntimeException
      */
     public function __construct(HandlerInterface $defaultHandler)
@@ -56,7 +56,7 @@ class Logger extends AbstractLogger implements LoggerInterface
      *
      * @param string $level See [`\Psr\Log\LogLevel`][psr].
      *     [psr]: https://github.com/php-fig/log/blob/master/Psr/Log/LogLevel.php
-     * @param Acfatah\ErrorHandler\Logger\HandlerInterface $handler Log handler
+     * @param \Acfatah\ErrorHandler\Logger\HandlerInterface $handler Log handler
      */
     public function addHandler($level, HandlerInterface $handler)
     {
@@ -91,8 +91,8 @@ class Logger extends AbstractLogger implements LoggerInterface
     /**
      * Sets the default log handler.
      *
-     * @param Acfatah\ErrorHandler\Logger\HandlerInterface $defaultHandler Default log handler
-     * @return Acfatah\ErrorHandler\Logger\Logger
+     * @param \Acfatah\ErrorHandler\Logger\HandlerInterface $defaultHandler Default log handler
+     * @return static
      */
     public function setDefaultHandler(HandlerInterface $defaultHandler)
     {
