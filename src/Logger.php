@@ -15,6 +15,8 @@ namespace Acfatah\ErrorHandler;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Acfatah\ErrorHandler\Logger\HandlerInterface;
+use Acfatah\ErrorHandler\Logger\Handler\FileHandler;
+use Acfatah\ErrorHandler\Logger\Formatter\DefaultFormatter;
 
 /**
  * Logs data using handler(s).
@@ -44,11 +46,18 @@ class Logger extends AbstractLogger implements LoggerInterface
      * Constructor.
      *
      * @param \Acfatah\ErrorHandler\Logger\HandlerInterface $defaultHandler Default log handler
-     * @throws \RuntimeException
      */
-    public function __construct(HandlerInterface $defaultHandler)
+    public function __construct(HandlerInterface $defaultHandler = null)
     {
-        $this->defaultHandler = $defaultHandler;
+        if (is_null($defaultHandler)) {
+            $this->setDefaultHandler(
+                new FileHandler(new DefaultFormatter, ini_get('error_log'))
+            );
+
+            return;
+        }
+
+        $this->setDefaultHandler($defaultHandler);
     }
 
     /**
@@ -99,5 +108,15 @@ class Logger extends AbstractLogger implements LoggerInterface
         $this->defaultHandler = $defaultHandler;
 
         return $this;
+    }
+
+    /**
+     * Gets the default log handler.
+     *
+     * @return \Acfatah\ErrorHandler\Logger\HandlerInterface
+     */
+    public function getDefaultHandler()
+    {
+        return $this->defaultHandler;
     }
 }

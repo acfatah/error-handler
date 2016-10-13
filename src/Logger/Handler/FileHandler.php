@@ -32,13 +32,14 @@ class FileHandler implements HandlerInterface
     private $destination;
 
     /**
-     * @var Acfatah\ErrorHandler\Logger\FormatterInterface
+     * @var \Acfatah\ErrorHandler\Logger\FormatterInterface
      */
     private $formatter;
 
     /**
      * Constructor.
      *
+     * @param \Acfatah\ErrorHandler\Logger\FormatterInterface $formatter
      * @param string $destination
      */
     public function __construct(FormatterInterface $formatter, $destination)
