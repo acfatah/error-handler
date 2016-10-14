@@ -33,6 +33,10 @@ use Psr\Log\LoggerAwareInterface;
  */
 class ErrorHandler implements LoggerAwareInterface
 {
+    /**
+     * @var boolean
+     */
+    private $registered;
 
     /**
      * @var callable
@@ -100,9 +104,7 @@ class ErrorHandler implements LoggerAwareInterface
             ->setLogger($logger)
             ->setReservedMemory($kilobytesReservedMemory);
 
-        set_error_handler([$this, 'errorHandler']);
-        set_exception_handler([$this, 'exceptionHandler']);
-        register_shutdown_function([$this, 'fatalHandler']);
+        $this->register();
     }
 
     /**
@@ -112,8 +114,24 @@ class ErrorHandler implements LoggerAwareInterface
      */
     public function __destruct()
     {
-        restore_error_handler();
-        restore_exception_handler();
+        $this->unregister();
+    }
+
+    public function register()
+    {
+        set_error_handler([$this, 'errorHandler']);
+        set_exception_handler([$this, 'exceptionHandler']);
+        register_shutdown_function([$this, 'fatalHandler']);
+
+        $this->setRegistered(true);
+    }
+
+    public function unregister()
+    {
+        if ($this->isRegistered()) {
+            restore_error_handler();
+            restore_exception_handler();
+        }
     }
 
     /**
@@ -304,5 +322,28 @@ class ErrorHandler implements LoggerAwareInterface
         if (null !== $this->getErrorCallback()) {
             call_user_func($this->getErrorCallback(), $exception);
         }
+    }
+
+    /**
+     * Registered setter.
+     *
+     * @param boolean $registered
+     * @return static
+     */
+    protected function setRegistered($registered)
+    {
+        $this->registered = boolval($registered);
+
+        return $this;
+    }
+
+    /**
+     * Checks whether the handler is registered.
+     *
+     * @return boolean
+     */
+    protected function isRegistered()
+    {
+        return $this->registered;
     }
 }
