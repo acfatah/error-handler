@@ -37,7 +37,7 @@ class ErrorHandler implements LoggerAwareInterface
     /**
      * @var callable
      */
-    protected $callback;
+    protected $errorCallback;
 
     /**
      * @var \Psr\Log\LoggerInterface
@@ -96,8 +96,9 @@ class ErrorHandler implements LoggerAwareInterface
         ini_set('display_startup_errors', '0');
         ini_set('log_errors', '0');
 
-        $this->logger = $logger;
-        $this->setReservedMemory($kilobytesReservedMemory);
+        $this
+            ->setLogger($logger)
+            ->setReservedMemory($kilobytesReservedMemory);
 
         set_error_handler([$this, 'errorHandler']);
         set_exception_handler([$this, 'exceptionHandler']);
@@ -137,12 +138,12 @@ class ErrorHandler implements LoggerAwareInterface
             case E_DEPRECATED:
             case E_USER_DEPRECATED:
             case E_STRICT:
-                $this->logger->notice($logString, $errorContext);
+                $this->getLogger()->notice($logString, $errorContext);
                 break;
             // warnings
             case E_WARNING:
             case E_USER_WARNING:
-                $this->logger->warning($logString, $errorContext);
+                $this->getLogger()->warning($logString, $errorContext);
                 break;
             // fatal errors
             case E_ERROR:
@@ -164,7 +165,7 @@ class ErrorHandler implements LoggerAwareInterface
     {
         if ($exception instanceof ErrorException) {
             $errorCode = $exception->getSeverity();
-            $this->logger->critical(sprintf(
+            $this->getLogger()->critical(sprintf(
                 'Error (%s): %s in %s on line %d',
                 isset(self::$errorMaps[$errorCode])? self::$errorMaps[$errorCode]: 'Unknown',
                 $exception->getMessage(),
@@ -173,7 +174,7 @@ class ErrorHandler implements LoggerAwareInterface
             ));
         } else {
             $errorCode = E_ERROR;
-            $this->logger->critical(sprintf(
+            $this->getLogger()->critical(sprintf(
                 "Uncaught exception \"%s\" with message \"%s\" in %s:%d\nStack trace:\n%s",
                 get_class($exception),
                 $exception->getMessage(),
@@ -182,13 +183,8 @@ class ErrorHandler implements LoggerAwareInterface
                 $exception->getTraceAsString()
             ));
         }
-        // sets appropiate header
-        $protocol = isset($_SERVER['SERVER_PROTOCOL'])? $_SERVER['SERVER_PROTOCOL']: 'HTTP/1.1';
-        header("$protocol 500 Internal Server Error");
-        http_response_code(500);
-        if (isset($this->callback)) {
-            call_user_func($this->callback, $exception);
-        }
+
+        $this->invokeErrorCallback($exception);
     }
 
     /**
@@ -196,19 +192,19 @@ class ErrorHandler implements LoggerAwareInterface
      */
     public function fatalHandler()
     {
-        $this->reservedMemory = null;
+        $this->setReservedMemory(0);
         $error = $this->getLastError();
         if ($error && in_array($error['type'], self::$fatalErrors)) {
-            $this->logger->critical(sprintf(
+            $this->getLogger()->critical(sprintf(
                 'Fatal Error (%s): %s in %s on line %d',
                 isset(self::$errorMaps[$error['type']])? self::$errorMaps[$error['type']]: 'Unknown',
                 $error['message'],
                 $error['file'],
                 $error['line']
             ));
-            if (isset($this->callback)) {
+            if (null !== $this->getErrorCallback()) {
                 call_user_func(
-                    $this->callback,
+                    $this->getErrorCallback(),
                     new ErrorException(
                         $error['message'],
                         0,
@@ -232,9 +228,19 @@ class ErrorHandler implements LoggerAwareInterface
      */
     public function setErrorCallback(callable $callback)
     {
-        $this->callback = $callback;
+        $this->errorCallback = $callback;
 
         return $this;
+    }
+
+    /**
+     * Gets the error handler callback.
+     *
+     * @return callable
+     */
+    public function getErrorCallback()
+    {
+        return $this->errorCallback;
     }
 
     /**
@@ -250,13 +256,23 @@ class ErrorHandler implements LoggerAwareInterface
     }
 
     /**
+     * Gets the logger.
+     *
+     * @return \Psr\Log\LoggerInterface
+     */
+    public function getLogger()
+    {
+        return $this->logger;
+    }
+
+    /**
      * Sets the reserved memory in kilobytes.
      *
      * @param int $kilobytes
      */
     public function setReservedMemory($kilobytes)
     {
-        $this->reservedMemory = str_repeat(' ', 1024 * $kilobytes);
+        $this->reservedMemory = str_repeat(' ', 1024 * intval($kilobytes));
 
         return $this;
     }
@@ -271,5 +287,22 @@ class ErrorHandler implements LoggerAwareInterface
     protected function getLastError()
     {
         return error_get_last();
+    }
+
+    /**
+     * Invokes the error callback.
+     *
+     * @param type $exception
+     */
+    protected function invokeErrorCallback($exception)
+    {
+        // sets appropiate header
+        $protocol = isset($_SERVER['SERVER_PROTOCOL'])? $_SERVER['SERVER_PROTOCOL']: 'HTTP/1.1';
+        header("$protocol 500 Internal Server Error");
+        http_response_code(500);
+        // invoke the callback
+        if (null !== $this->getErrorCallback()) {
+            call_user_func($this->getErrorCallback(), $exception);
+        }
     }
 }

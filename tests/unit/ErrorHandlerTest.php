@@ -69,7 +69,7 @@ class ErrorHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function testHandleException()
     {
-        $regex = '~Uncaught exception "Exception" with message "EXCEPTION" in [a-zA-Z:/. \\\\_-]+:\d+\nStack trace:\n~';
+        $regex = '~Uncaught exception "Exception" with message "EXCEPTION" in [a-zA-Z0-9:/. \\\\_-]+:\d+\nStack trace:\n~';
         $logger = $this->getMockForAbstractClass('Psr\Log\LoggerInterface');
         $logger
             ->expects($this->once())
