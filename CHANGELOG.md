@@ -1,3 +1,9 @@
+[dev-master] - 2015-10-19
+-------------------------
+
+### Added
+- 'sendHeader' method to disable sending header
+
 [dev-master] - 2015-10-14
 -------------------------
 

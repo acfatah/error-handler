@@ -39,6 +39,11 @@ class ErrorHandler implements LoggerAwareInterface
     private $registered;
 
     /**
+     * @var boolean
+     */
+    private $sendHeader = true;
+
+    /**
      * @var callable
      */
     protected $errorCallback;
@@ -301,6 +306,29 @@ class ErrorHandler implements LoggerAwareInterface
     }
 
     /**
+     * Send header setter method.
+     *
+     * @param boolean $sendHeader
+     * @return static
+     */
+    public function setSendHeader($sendHeader)
+    {
+        $this->sendHeader = boolval($sendHeader);
+
+        return $this;
+    }
+
+    /**
+     * Checks whether to send headers.
+     *
+     * @return boolean
+     */
+    public function sendHeader()
+    {
+        return $this->sendHeader;
+    }
+
+    /**
      * Simply returns `error_get_last()`.
      *
      * @return array
@@ -319,12 +347,15 @@ class ErrorHandler implements LoggerAwareInterface
      */
     protected function invokeErrorCallback($exception)
     {
-        // sets appropiate header
-        $protocol = isset($_SERVER['SERVER_PROTOCOL'])? $_SERVER['SERVER_PROTOCOL']: 'HTTP/1.1';
-        header("$protocol 500 Internal Server Error");
-        http_response_code(500);
-        // invoke the callback
+        if ($this->sendHeader) {
+            // sets appropiate header
+            $protocol = isset($_SERVER['SERVER_PROTOCOL'])? $_SERVER['SERVER_PROTOCOL']: 'HTTP/1.1';
+            header("$protocol 500 Internal Server Error");
+            http_response_code(500);
+        }
+
         if (null !== $this->getErrorCallback()) {
+            // invoke the callback
             call_user_func($this->getErrorCallback(), $exception);
         }
     }
