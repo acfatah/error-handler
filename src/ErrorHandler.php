@@ -119,11 +119,14 @@ class ErrorHandler implements LoggerAwareInterface
 
     public function register()
     {
-        set_error_handler([$this, 'errorHandler']);
-        set_exception_handler([$this, 'exceptionHandler']);
-        register_shutdown_function([$this, 'fatalHandler']);
+        if (!$this->isRegistered()) {
+            set_error_handler([$this, 'errorHandler']);
+            set_exception_handler([$this, 'exceptionHandler']);
+            register_shutdown_function([$this, 'fatalHandler']);
+            $this->setRegistered(true);
+        }
 
-        $this->setRegistered(true);
+        return $this;
     }
 
     public function unregister()
@@ -132,6 +135,8 @@ class ErrorHandler implements LoggerAwareInterface
             restore_error_handler();
             restore_exception_handler();
         }
+
+        return $this;
     }
 
     /**
